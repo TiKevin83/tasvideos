@@ -6,35 +6,34 @@ using Microsoft.AspNetCore.Mvc;
 using TASVideos.Core.Services;
 using TASVideos.Data.Entity;
 
-namespace TASVideos.Pages.Wiki
+namespace TASVideos.Pages.Wiki;
+
+[AllowAnonymous]
+[IgnoreAntiforgeryToken]
+public class PreviewModel : BasePageModel
 {
-	[AllowAnonymous]
-	[IgnoreAntiforgeryToken]
-	public class PreviewModel : BasePageModel
+	private readonly IWikiPages _pages;
+
+	public PreviewModel(IWikiPages pages)
 	{
-		private readonly IWikiPages _pages;
+		_pages = pages;
+	}
 
-		public PreviewModel(IWikiPages pages)
+	public string Markup { get; set; } = "";
+
+	[FromQuery]
+	public int? Id { get; set; }
+
+	public WikiPage PageData { get; set; } = new ();
+
+	public async Task<IActionResult> OnPost()
+	{
+		Markup = await new StreamReader(Request.Body, Encoding.UTF8).ReadToEndAsync();
+		if (Id.HasValue)
 		{
-			_pages = pages;
+			PageData = await _pages.Revision(Id.Value);
 		}
 
-		public string Markup { get; set; } = "";
-
-		[FromQuery]
-		public int? Id { get; set; }
-
-		public WikiPage PageData { get; set; } = new ();
-
-		public async Task<IActionResult> OnPost()
-		{
-			Markup = await new StreamReader(Request.Body, Encoding.UTF8).ReadToEndAsync();
-			if (Id.HasValue)
-			{
-				PageData = await _pages.Revision(Id.Value);
-			}
-
-			return Page();
-		}
+		return Page();
 	}
 }

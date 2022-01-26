@@ -7,40 +7,39 @@ using Microsoft.EntityFrameworkCore;
 using TASVideos.Data;
 using TASVideos.Pages.Roles.Models;
 
-namespace TASVideos.Pages.Roles
+namespace TASVideos.Pages.Roles;
+
+[AllowAnonymous]
+public class IndexModel : BasePageModel
 {
-	[AllowAnonymous]
-	public class IndexModel : BasePageModel
+	private readonly ApplicationDbContext _db;
+	private readonly IMapper _mapper;
+
+	public IndexModel(ApplicationDbContext db, IMapper mapper)
 	{
-		private readonly ApplicationDbContext _db;
-		private readonly IMapper _mapper;
+		_db = db;
+		_mapper = mapper;
+	}
 
-		public IndexModel(ApplicationDbContext db, IMapper mapper)
+	public RoleDisplayModel Role { get; set; } = new ();
+
+	public async Task<IActionResult> OnGet(string role)
+	{
+		if (string.IsNullOrWhiteSpace(role))
 		{
-			_db = db;
-			_mapper = mapper;
+			return BasePageRedirect("/Roles/List");
 		}
 
-		public RoleDisplayModel Role { get; set; } = new ();
+		Role = await _mapper
+			.ProjectTo<RoleDisplayModel>(
+				_db.Roles.Where(r => r.Name == role))
+			.SingleOrDefaultAsync();
 
-		public async Task<IActionResult> OnGet(string role)
+		if (Role == null)
 		{
-			if (string.IsNullOrWhiteSpace(role))
-			{
-				return BasePageRedirect("/Roles/List");
-			}
-
-			Role = await _mapper
-				.ProjectTo<RoleDisplayModel>(
-					_db.Roles.Where(r => r.Name == role))
-				.SingleOrDefaultAsync();
-
-			if (Role == null)
-			{
-				return NotFound();
-			}
-
-			return Page();
+			return NotFound();
 		}
+
+		return Page();
 	}
 }
